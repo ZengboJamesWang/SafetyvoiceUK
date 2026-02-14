@@ -1,0 +1,5 @@
+{
+  "name": "SafetyVoice UK - HEI Lab Safety Platform",
+  "description": "An independent platform for UK laboratory users to share experiences regarding safety enforcement, dignity, and EDI, featuring automated anonymisation via Gemini AI.",
+  "requestFramePermissions": []
+}
