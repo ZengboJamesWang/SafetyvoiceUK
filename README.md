@@ -304,9 +304,36 @@ Copy `.env.example` to `.env` and set these values:
 | `DOMAIN` | No | Your public domain — used by `deploy.sh` for Nginx config |
 | `FRONTEND_ORIGIN` | No | CORS origin — set to `https://yourdomain.com` in production |
 | `NODE_ENV` | No | Set to `production` for production deployments |
+| `SMTP_HOST` | No | SMTP server hostname (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | No | SMTP port (default: `587`) |
+| `SMTP_SECURE` | No | `true` for port 465 TLS, `false` for STARTTLS (default) |
+| `SMTP_USER` | No | SMTP login username / email address |
+| `SMTP_PASS` | No | SMTP password or app-specific password |
+| `NOTIFY_EMAIL` | No | Address to receive new-submission notifications |
 
 > `DB_PASSWORD` and the password in `DATABASE_URL` must be the **same value**.
 > Never commit `.env` to version control — it is in `.gitignore`.
+
+### Email Notifications
+
+When `SMTP_HOST`, `SMTP_USER`, and `SMTP_PASS` are all set, the server sends an email to `NOTIFY_EMAIL` every time a new submission is received. The subject line includes the submitter's role and region, e.g.:
+
+```
+SafetyVoice UK — New Submission [PhD Student · Scotland]
+```
+
+**Gmail example** — create an [App Password](https://myaccount.google.com/apppasswords) (requires 2FA):
+
+```
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your.address@gmail.com
+SMTP_PASS=xxxx xxxx xxxx xxxx
+NOTIFY_EMAIL=zengbo.wang@gmail.com
+```
+
+Leave all `SMTP_*` variables empty to disable email notifications entirely — submissions are unaffected.
 
 ---
 

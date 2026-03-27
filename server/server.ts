@@ -7,11 +7,46 @@ import { fileURLToPath } from 'url';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import 'dotenv/config';
+import nodemailer from 'nodemailer';
 import { localRedact, generateAnonymizedDraft } from './geminiService';
 import pool from './db';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Email transporter — only created when SMTP credentials are configured
+const mailer = (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
+  ? nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    })
+  : null;
+
+async function sendSubmissionNotification(id: string, role?: string, region?: string) {
+  if (!mailer || !process.env.NOTIFY_EMAIL) return;
+  const meta = [role, region].filter(Boolean).join(' · ');
+  try {
+    await mailer.sendMail({
+      from: `"SafetyVoice UK" <${process.env.SMTP_USER}>`,
+      to: process.env.NOTIFY_EMAIL,
+      subject: `SafetyVoice UK — New Submission${meta ? ` [${meta}]` : ''}`,
+      text: [
+        'A new experience report has been submitted on SafetyVoice UK.',
+        '',
+        `Submission ID : ${id}`,
+        `Role          : ${role || 'Unspecified'}`,
+        `Region        : ${region || 'Unspecified'}`,
+        '',
+        'Log in to the admin panel to review and moderate this submission.',
+      ].join('\n'),
+    });
+  } catch (err) {
+    // Non-fatal — log but don't block the response
+    console.error('[email] Failed to send notification:', err);
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -119,11 +154,14 @@ app.post('/api/submissions', submissionLimiter, async (req, res) => {
       );
     }
 
-    res.status(201).json({ 
-      success: true, 
+    // Fire-and-forget email notification
+    sendSubmissionNotification(submissionId, data.role, data.region);
+
+    res.status(201).json({
+      success: true,
       id: submissionId,
       draft,
-      message: "Submission received and securely archived for 10 years." 
+      message: "Submission received and securely archived for 10 years."
     });
   } catch (err) {
     if (err instanceof z.ZodError) return res.status(400).json({ error: err.errors });
