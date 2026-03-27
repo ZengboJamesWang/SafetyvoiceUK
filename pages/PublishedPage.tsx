@@ -9,10 +9,10 @@ const PublishedPage: React.FC = () => {
   const [selectedStory, setSelectedStory] = useState<SubmissionRecord | null>(null);
 
   useEffect(() => {
-    // Fetch live published stories from simulation
-    const data = db.getPublished();
-    setStories(data);
-    setLoading(false);
+    db.getPublished()
+      .then(setStories)
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) {

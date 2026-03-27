@@ -16,7 +16,8 @@ const AdminLoginPage: React.FC = () => {
         body: JSON.stringify({ password })
       });
       if (res.ok) {
-        sessionStorage.setItem('admin_auth', 'true');
+        const { token } = await res.json();
+        sessionStorage.setItem('admin_token', token);
         navigate('/admin/dashboard');
       } else {
         setError('Invalid administrative credentials.');

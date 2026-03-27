@@ -6,29 +6,39 @@ import { db } from '../utils/db';
 const AdminDashboard: React.FC = () => {
   const [submissions, setSubmissions] = useState<SubmissionRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [selectedSub, setSelectedSub] = useState<SubmissionRecord | null>(null);
-  
+
   const [showPassModal, setShowPassModal] = useState(false);
-  const [passForm, setPassForm] = useState({ current: '', next: '', confirm: '' });
+  const [passForm, setPassForm] = useState({ next: '', confirm: '' });
   const [passStatus, setPassStatus] = useState<{ type: 'error' | 'success', msg: string } | null>(null);
 
-  const loadData = () => {
-    setSubmissions(db.getAll());
-    setLoading(false);
+  const loadData = async () => {
+    try {
+      setSubmissions(await db.getAll());
+    } catch {
+      setError('Failed to load submissions. Please log in again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    if (!sessionStorage.getItem('admin_auth')) {
+    if (!sessionStorage.getItem('admin_token')) {
       window.location.hash = '/admin';
       return;
     }
     loadData();
   }, []);
 
-  const updateStatus = (id: string, newStatus: SubmissionStatus) => {
-    db.updateStatus(id, newStatus);
-    loadData();
-    setSelectedSub(null);
+  const updateStatus = async (id: string, newStatus: SubmissionStatus) => {
+    try {
+      await db.updateStatus(id, newStatus);
+      await loadData();
+      setSelectedSub(null);
+    } catch {
+      alert('Failed to update status. Please try again.');
+    }
   };
 
   const handlePassChange = async (e: React.FormEvent) => {
@@ -38,17 +48,21 @@ const AdminDashboard: React.FC = () => {
       return;
     }
     try {
+      const token = sessionStorage.getItem('admin_token') || '';
       const res = await fetch('/api/admin/change-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ current: passForm.current, next: passForm.next })
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ next: passForm.next }),
       });
       if (res.ok) {
-        setPassStatus({ type: 'success', msg: 'Password updated successfully.' });
-        setPassForm({ current: '', next: '', confirm: '' });
-        setTimeout(() => { setShowPassModal(false); setPassStatus(null); }, 1500);
+        setPassStatus({ type: 'success', msg: 'Password updated. You will be logged out.' });
+        setTimeout(() => {
+          sessionStorage.removeItem('admin_token');
+          window.location.hash = '/admin';
+        }, 1500);
       } else {
-        setPassStatus({ type: 'error', msg: 'Current password is incorrect.' });
+        const { error: msg } = await res.json().catch(() => ({ error: 'Unknown error' }));
+        setPassStatus({ type: 'error', msg });
       }
     } catch {
       setPassStatus({ type: 'error', msg: 'Server error. Please try again.' });
@@ -56,19 +70,20 @@ const AdminDashboard: React.FC = () => {
   };
 
   if (loading) return <div className="p-20 text-center text-slate-400 font-medium">Loading database...</div>;
+  if (error) return <div className="p-20 text-center text-red-500 font-medium">{error}</div>;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Moderation Dashboard</h1>
-          <p className="text-slate-500 text-sm mt-1">Found {submissions.length} submissions in the local database.</p>
+          <p className="text-slate-500 text-sm mt-1">Found {submissions.length} submissions in the database.</p>
         </div>
         <div className="flex items-center gap-3">
           <button onClick={() => setShowPassModal(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-50 transition shadow-sm">
             Security
           </button>
-          <button onClick={() => { sessionStorage.removeItem('admin_auth'); window.location.hash = '/'; }} className="px-4 py-2 text-sm text-red-500 font-semibold hover:bg-red-50 rounded-xl transition">
+          <button onClick={() => { sessionStorage.removeItem('admin_token'); window.location.hash = '/'; }} className="px-4 py-2 text-sm text-red-500 font-semibold hover:bg-red-50 rounded-xl transition">
             Logout
           </button>
         </div>
@@ -121,9 +136,8 @@ const AdminDashboard: React.FC = () => {
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-8 border border-slate-200">
             <h2 className="text-xl font-bold text-slate-900 mb-6">Update Admin Password</h2>
             <form onSubmit={handlePassChange} className="space-y-4">
-              <input type="password" required placeholder="Current Password" value={passForm.current} onChange={e => setPassForm(p => ({...p, current: e.target.value}))} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none" />
               <input type="password" required placeholder="New Password" value={passForm.next} onChange={e => setPassForm(p => ({...p, next: e.target.value}))} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none" />
-              <input type="password" required placeholder="Confirm New" value={passForm.confirm} onChange={e => setPassForm(p => ({...p, confirm: e.target.value}))} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none" />
+              <input type="password" required placeholder="Confirm New Password" value={passForm.confirm} onChange={e => setPassForm(p => ({...p, confirm: e.target.value}))} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none" />
               {passStatus && <div className={`p-3 rounded-lg text-xs font-bold ${passStatus.type === 'error' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>{passStatus.msg}</div>}
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => { setShowPassModal(false); setPassStatus(null); }} className="flex-1 bg-slate-100 font-bold py-3 rounded-xl">Cancel</button>
@@ -166,7 +180,7 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div className="p-8 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
               <button onClick={() => updateStatus(selectedSub.id, SubmissionStatus.REJECTED)} className="px-6 py-3 bg-white text-red-600 rounded-xl font-bold">Reject</button>
-              <button onClick={() => updateStatus(selectedSub.id, SubmissionStatus.PUBLISHED)} className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold shadow-lg">Approve & Publish</button>
+              <button onClick={() => updateStatus(selectedSub.id, SubmissionStatus.PUBLISHED)} className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold shadow-lg">Approve &amp; Publish</button>
             </div>
           </div>
         </div>

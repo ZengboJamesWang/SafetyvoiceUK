@@ -38,15 +38,7 @@ const SubmitPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // 1. Save to local storage for offline resilience
-      const localRecord = await db.save({
-        ...formData,
-        status: SubmissionStatus.PRIVATE
-      });
-
-      // 2. The backend now handles AI anonymisation and MariaDB persistence
-      // We already call the backend inside db.save() via fetch('/api/submissions')
-      
+      await db.save({ ...formData, status: SubmissionStatus.PRIVATE });
       setSubmitted(true);
     } catch (err) {
       console.error(err);
