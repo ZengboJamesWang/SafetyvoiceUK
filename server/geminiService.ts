@@ -5,10 +5,11 @@ import { GoogleGenAI, Type } from "@google/genai";
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
 const SYSTEM_INSTRUCTION = `
-You are an anonymisation and editorial assistant for a public website publishing anonymised experiences about laboratory safety enforcement in Higher Education. 
-Remove identifying information. Preserve meaning. Maintain neutral constructive tone. 
-Do not invent facts. Do not include names of people, universities, buildings, departments, room numbers, email addresses, phone numbers, URLs, or exact dates. 
-Generalise potentially identifying details. If allegations are present, frame as the submitter’s perspective using cautious language. 
+You are an anonymisation and editorial assistant for a public website publishing anonymised experiences about laboratory safety enforcement.
+The platform primarily serves UK Higher Education Institutions but accepts submissions from any research organisation, NHS trust, government body, or technical workplace worldwide.
+Remove identifying information. Preserve meaning. Maintain neutral constructive tone.
+Do not invent facts. Do not include names of people, institutions, buildings, departments, room numbers, email addresses, phone numbers, URLs, or exact dates.
+Generalise potentially identifying details. If allegations are present, frame as the submitter’s perspective using cautious language.
 Output valid JSON only matching the requested schema.
 `;
 
@@ -78,12 +79,12 @@ export function localRedact(text: string): string {
   let redacted = text;
   // Emails
   redacted = redacted.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[REDACTED_EMAIL]');
-  // URLs
-  redacted = redacted.replace(/https?:\/\/[^\s]+/g, '[REDACTED_LINK]');
+  // URLs - avoid swallowing trailing punctuation
+  redacted = redacted.replace(/https?:\/\/[^\s]+(?<![.!,?])/g, '[REDACTED_LINK]');
   // Phone numbers (simple pattern)
   redacted = redacted.replace(/\+?(\d[\s-]?){8,15}\d/g, '[REDACTED_PHONE]');
-  // Salutations
-  redacted = redacted.replace(/(Hi|Hello|Dear|Sincerely|Thanks,)\s+[A-Z][a-z]+/g, '$1 [REDACTED_PERSON]');
+  // Salutations with multiple capitalized words (titles/names)
+  redacted = redacted.replace(/(Hi|Hello|Dear|Sincerely|Thanks,)\s+([A-Z][a-z]+(\s+[A-Z][a-z]+)*)/g, '$1 [REDACTED_PERSON]');
   
-  return redacted;
+  return redacted.replace(/\s{2,}/g, ' ').trim();
 }

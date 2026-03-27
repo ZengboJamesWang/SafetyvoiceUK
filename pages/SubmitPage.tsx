@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { db } from '../utils/db';
 import { SubmissionStatus } from '../types';
-import { GoogleGenAI, Type } from "@google/genai";
 
 const SubmitPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -15,6 +14,8 @@ const SubmitPage: React.FC = () => {
     impact: '',
     improvement: '',
     consentPublish: false,
+    contactName: '',
+    contactEmail: '',
     hp: '',
   });
 
@@ -30,72 +31,6 @@ const SubmitPage: React.FC = () => {
     }));
   };
 
-  const generateAiDraft = async (data: typeof formData) => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-    
-    const systemInstruction = `
-      You are an expert anonymisation assistant for SafetyVoice UK. 
-      Your task is to take a raw laboratory safety experience and rewrite it into a professional, anonymised narrative for public consumption.
-      RULES:
-      1. REMOVE: Names, University names, Department names, specific Room numbers, and exact Dates.
-      2. GENERALISE: Specific equipment brands (e.g., replace 'Nikon Ti2' with 'high-end inverted microscope').
-      3. TONE: Maintain a constructive, neutral, and professional tone.
-      4. STRUCTURE: Use "### What happened", "### Impact", and "### What would help" headers.
-      5. FORMAT: Return valid JSON matching the schema provided.
-    `;
-
-    const prompt = `
-      Please anonymise and draft a story for a: ${data.role} in ${data.discipline} at a ${data.institutionType} in ${data.region}.
-      
-      RAW EXPERIENCE:
-      ${data.whatHappened}
-      
-      IMPACT:
-      ${data.impact}
-      
-      SUGGESTED IMPROVEMENTS:
-      ${data.improvement}
-    `;
-
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-        config: {
-          systemInstruction,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              publishTitle: { type: Type.STRING, description: 'A neutral title' },
-              publishSummary: { type: Type.STRING, description: '1-sentence summary' },
-              publishStory: { type: Type.STRING, description: 'Markdown formatted story with required headers' },
-              anonymisationNotes: { 
-                type: Type.ARRAY, 
-                items: { type: Type.STRING },
-                description: 'Brief list of what was changed for privacy'
-              },
-              confidence: { type: Type.STRING, description: 'high|medium|low' }
-            },
-            required: ["publishTitle", "publishSummary", "publishStory", "anonymisationNotes", "confidence"]
-          }
-        }
-      });
-
-      return JSON.parse(response.text);
-    } catch (error) {
-      console.error("AI Generation failed:", error);
-      return {
-        publishTitle: "Experience Report",
-        publishSummary: "Report pending manual anonymisation review.",
-        publishStory: `### What happened\n${data.whatHappened}\n\n### Impact\n${data.impact}\n\n### What would help\n${data.improvement}`,
-        anonymisationNotes: ["AI processing failed - manual redaction required."],
-        confidence: "low",
-        riskFlags: ["API_ERROR"]
-      };
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.hp) return;
@@ -103,15 +38,15 @@ const SubmitPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const aiDraft = await generateAiDraft(formData);
-
-      db.save({
+      // 1. Save to local storage for offline resilience
+      const localRecord = await db.save({
         ...formData,
-        ...aiDraft,
-        riskFlags: aiDraft.riskFlags || [],
-        status: SubmissionStatus.DRAFT_GENERATED
+        status: SubmissionStatus.PRIVATE
       });
 
+      // 2. The backend now handles AI anonymisation and MariaDB persistence
+      // We already call the backend inside db.save() via fetch('/api/submissions')
+      
       setSubmitted(true);
     } catch (err) {
       console.error(err);
@@ -164,7 +99,7 @@ const SubmitPage: React.FC = () => {
       <div className="mb-12">
         <h1 className="text-3xl font-bold text-slate-900 mb-2 tracking-tight">Share your experience</h1>
         <p className="text-slate-500 font-normal">
-          Participate in the 2026-2029 Safety Culture project. All data is processed using Google Gemini AI for automated anonymisation and archived for 10 years in line with UKRI principles.
+          All submissions are processed using Google Gemini AI for automated anonymisation and securely archived in line with UK GDPR and institutional data management standards.
         </p>
       </div>
 
@@ -184,58 +119,100 @@ const SubmitPage: React.FC = () => {
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">Your Role</label>
             <select name="role" required value={formData.role} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-slate-900 outline-none appearance-none bg-slate-50">
               <option value="">Select...</option>
-              <option value="Academic Staff">Academic Staff</option>
+              <option value="Undergraduate / Masters Student">Undergraduate / Masters Student</option>
               <option value="PhD Student">PhD Student</option>
-              <option value="Technical Staff">Technical Staff</option>
+              <option value="Postdoctoral Researcher">Postdoctoral Researcher</option>
               <option value="Research Fellow">Research Fellow</option>
+              <option value="Academic Staff">Academic Staff (Lecturer / Senior Lecturer / Professor)</option>
+              <option value="Technical Staff">Technical Staff / Technician</option>
               <option value="Laboratory Manager">Laboratory Manager</option>
+              <option value="Health & Safety Officer">Health &amp; Safety Officer</option>
+              <option value="Visiting Researcher / Scholar">Visiting Researcher / Scholar</option>
+              <option value="Professional Services Staff">Professional Services / Administrative Staff</option>
+              <option value="Other">Other</option>
             </select>
           </div>
           <div className="space-y-1">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">UK Region</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">Region / Location</label>
             <select name="region" required value={formData.region} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-slate-900 outline-none appearance-none bg-slate-50">
               <option value="">Select...</option>
-              <option value="East Midlands">East Midlands</option>
-              <option value="East of England">East of England</option>
-              <option value="London">London</option>
-              <option value="North East">North East</option>
-              <option value="North West">North West</option>
-              <option value="Northern Ireland">Northern Ireland</option>
-              <option value="Scotland">Scotland</option>
-              <option value="South East">South East</option>
-              <option value="South West">South West</option>
-              <option value="Wales">Wales</option>
-              <option value="West Midlands">West Midlands</option>
-              <option value="Yorkshire and the Humber">Yorkshire and the Humber</option>
-              <option value="Crown Dependencies (Isle of Man/Channel Islands)">Crown Dependencies (Isle of Man/Channel Islands)</option>
-              <option value="Other / Outside UK">Other / Outside UK</option>
+              <optgroup label="── UK Regions ──">
+                <option value="East Midlands">East Midlands</option>
+                <option value="East of England">East of England</option>
+                <option value="London">London</option>
+                <option value="North East">North East</option>
+                <option value="North West">North West</option>
+                <option value="Northern Ireland">Northern Ireland</option>
+                <option value="Scotland">Scotland</option>
+                <option value="South East">South East</option>
+                <option value="South West">South West</option>
+                <option value="Wales">Wales</option>
+                <option value="West Midlands">West Midlands</option>
+                <option value="Yorkshire and the Humber">Yorkshire and the Humber</option>
+                <option value="Crown Dependencies">Crown Dependencies (Isle of Man / Channel Islands)</option>
+              </optgroup>
+              <optgroup label="── Outside UK ──">
+                <option value="Europe (outside UK)">Europe (outside UK)</option>
+                <option value="North America">North America</option>
+                <option value="Asia Pacific">Asia Pacific</option>
+                <option value="Middle East & Africa">Middle East &amp; Africa</option>
+                <option value="Latin America">Latin America</option>
+                <option value="Other / International">Other / International</option>
+              </optgroup>
+              <option value="Prefer not to say">Prefer not to say</option>
             </select>
+            <p className="text-[10px] text-slate-400 mt-1">Primarily serving UK institutions — international submissions are welcome.</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-1">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">Institution Type</label>
-            <select name="institutionType" required value={formData.institutionType} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-slate-900 outline-none appearance-none bg-slate-50">
-              <option value="">Select...</option>
-              <option value="Russell Group">Russell Group</option>
-              <option value="Post-92 University">Post-92 University</option>
-              <option value="Research Institute">Research Institute</option>
-              <option value="Specialist Institution">Specialist Institution</option>
-            </select>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">Institution Name</label>
+            <input
+              type="text"
+              name="institutionType"
+              required
+              value={formData.institutionType}
+              onChange={handleChange}
+              placeholder="e.g. University of Manchester"
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-slate-900 outline-none bg-slate-50"
+            />
+            <p className="text-[10px] text-slate-400 mt-1">Your institution name will be anonymised before publication.</p>
           </div>
           <div className="space-y-1">
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">Scientific Discipline</label>
             <select name="discipline" required value={formData.discipline} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-slate-900 outline-none appearance-none bg-slate-50">
               <option value="">Select...</option>
-              <option value="Physics">Physics</option>
-              <option value="Chemistry">Chemistry</option>
               <option value="Biology / Life Sciences">Biology / Life Sciences</option>
+              <option value="Chemistry">Chemistry</option>
+              <option value="Physics">Physics</option>
               <option value="Engineering">Engineering</option>
               <option value="Materials Science">Materials Science</option>
               <option value="Environmental Science">Environmental Science</option>
+              <option value="Computer Science / IT">Computer Science / IT</option>
+              <option value="Mathematics / Statistics">Mathematics / Statistics</option>
+              <option value="Medical / Clinical Sciences">Medical / Clinical Sciences</option>
+              <option value="Psychology / Neuroscience">Psychology / Neuroscience</option>
+              <option value="Social Sciences / Humanities">Social Sciences / Humanities</option>
+              <option value="Geography / Earth Sciences">Geography / Earth Sciences</option>
+              <option value="Interdisciplinary / Mixed">Interdisciplinary / Mixed</option>
+              <option value="Other">Other</option>
             </select>
           </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">When did this occur?</label>
+          <select name="timeWindow" value={formData.timeWindow} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-slate-900 outline-none appearance-none bg-slate-50">
+            <option value="">Select (optional)...</option>
+            <option value="Within the last month">Within the last month</option>
+            <option value="1–6 months ago">1–6 months ago</option>
+            <option value="6–12 months ago">6–12 months ago</option>
+            <option value="1–3 years ago">1–3 years ago</option>
+            <option value="More than 3 years ago">More than 3 years ago</option>
+            <option value="Ongoing">Ongoing / recurring</option>
+            <option value="Prefer not to say">Prefer not to say</option>
+          </select>
         </div>
 
         <div className="space-y-8">
@@ -255,14 +232,50 @@ const SubmitPage: React.FC = () => {
           </div>
         </div>
 
+        <div className="p-8 bg-slate-50 rounded-2xl border border-slate-200 space-y-5">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-slate-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            <div>
+              <p className="text-sm font-bold text-slate-900">Optional — Contact Details</p>
+              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                If you are happy for the project team to contact you for further discussion, please provide your name and email below. This information is stored securely, is visible only to administrators, and will <strong>never</strong> be published or shared with anyone outside the project team.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">Your Name <span className="normal-case font-normal">(optional)</span></label>
+              <input
+                type="text"
+                name="contactName"
+                value={formData.contactName}
+                onChange={handleChange}
+                placeholder="e.g. Dr Jane Smith"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-slate-900 outline-none bg-white"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">Contact Email <span className="normal-case font-normal">(optional)</span></label>
+              <input
+                type="email"
+                name="contactEmail"
+                value={formData.contactEmail}
+                onChange={handleChange}
+                placeholder="e.g. j.smith@university.ac.uk"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-slate-900 outline-none bg-white"
+              />
+            </div>
+          </div>
+        </div>
+
         <div className="p-8 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-4">
           <div className="flex-shrink-0 mt-1">
             <input type="checkbox" required name="consentPublish" checked={formData.consentPublish} onChange={handleChange} className="h-5 w-5 rounded border-amber-300 text-slate-900 focus:ring-slate-900 cursor-pointer" />
           </div>
           <div className="text-sm text-amber-900 font-medium leading-relaxed">
-            I consent to the publication of an anonymised summary. 
+            I consent to the publication of an anonymised summary.
             <p className="text-amber-700 font-normal mt-1 text-xs">
-              I acknowledge that my raw response will be preserved for 10 years (until 2039) for research archival purposes in line with UKRI principles.
+              I acknowledge that my raw response will be securely preserved for a minimum of 10 years for archival purposes in line with UK GDPR and institutional data governance standards.
             </p>
           </div>
         </div>

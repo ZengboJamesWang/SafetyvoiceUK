@@ -7,17 +7,22 @@ const AdminLoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Check localStorage for a changed password, fallback to 'admin123'
-    const storedPassword = localStorage.getItem('admin_password') || 'admin123';
-    
-    if (password === storedPassword) {
-      sessionStorage.setItem('admin_auth', 'true');
-      navigate('/admin/dashboard');
-    } else {
-      setError('Invalid administrative credentials.');
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      if (res.ok) {
+        sessionStorage.setItem('admin_auth', 'true');
+        navigate('/admin/dashboard');
+      } else {
+        setError('Invalid administrative credentials.');
+      }
+    } catch {
+      setError('Unable to reach server. Please try again.');
     }
   };
 
@@ -55,10 +60,7 @@ const AdminLoginPage: React.FC = () => {
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-slate-100 space-y-3">
-          <p className="text-center text-[10px] text-slate-400 leading-relaxed uppercase tracking-widest">
-            Default password for setup: <span className="text-slate-600 font-bold select-all">admin123</span>
-          </p>
+        <div className="mt-8 pt-6 border-t border-slate-100">
           <p className="text-center text-[10px] text-slate-400">
             This area is restricted. All login attempts are logged and monitored.
           </p>

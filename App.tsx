@@ -43,31 +43,29 @@ const Footer: React.FC = () => (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
         <div>
-          <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-widest mb-4">Project Window</h3>
+          <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-widest mb-4">About</h3>
           <p className="text-sm text-slate-600 leading-relaxed">
-            SafetyVoice UK (safetyvoice.org.uk)<br/>
-            Active Phase: <strong>2026 — 2029</strong>.<br/>
-            Documenting UK laboratory culture through the lens of EDI and safety enforcement.
+            SafetyVoice UK is an independent initiative documenting UK laboratory safety culture through the lens of EDI and safety enforcement.
           </p>
         </div>
         <div>
           <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-widest mb-4">Legal & Governance</h3>
           <ul className="space-y-2 text-sm text-slate-600">
-            <li><Link to="/about" className="hover:underline">Governance & UKRI Alignment</Link></li>
-            <li><Link to="/privacy" className="hover:underline">Privacy & 10-Year Archiving</Link></li>
+            <li><Link to="/about" className="hover:underline">About & Governance</Link></li>
+            <li><Link to="/privacy" className="hover:underline">Privacy & Data Protection</Link></li>
             <li><Link to="/admin" className="hover:underline">Administrative Login</Link></li>
           </ul>
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-widest mb-4">Data Preservation</h3>
+          <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-widest mb-4">Data Protection</h3>
           <p className="text-xs text-slate-500 italic leading-relaxed">
-            In line with UK research governance (RDM), all project data are securely preserved and archived for 10 years following the 2029 completion date.
+            All submissions are securely stored and handled in accordance with UK GDPR and institutional data protection standards.
           </p>
         </div>
       </div>
       <div className="mt-8 pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-        <p>&copy; 2026 — 2029 SafetyVoice UK Research Initiative.</p>
-        <p>UKRI Principles • UK GDPR Compliant • Institutional Integrity</p>
+        <p>&copy; SafetyVoice UK. All rights reserved.</p>
+        <p>UK GDPR Compliant • Open to All Research Organisations • Institutional Integrity</p>
       </div>
     </div>
   </footer>

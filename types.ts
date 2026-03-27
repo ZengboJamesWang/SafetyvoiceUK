@@ -20,6 +20,9 @@ export interface RawSubmission extends SubmissionMetadata {
   impact: string;
   improvement: string;
   consentPublish: boolean;
+  // Optional contact details — stored securely, never published or sent to AI
+  contactName?: string;
+  contactEmail?: string;
 }
 
 export interface AnonymizedDraft {

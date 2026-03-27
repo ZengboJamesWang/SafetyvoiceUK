@@ -31,21 +31,28 @@ const AdminDashboard: React.FC = () => {
     setSelectedSub(null);
   };
 
-  const handlePassChange = (e: React.FormEvent) => {
+  const handlePassChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    const currentStored = localStorage.getItem('admin_password') || 'admin123';
-    if (passForm.current !== currentStored) {
-      setPassStatus({ type: 'error', msg: 'Current password is incorrect.' });
-      return;
-    }
     if (passForm.next !== passForm.confirm) {
       setPassStatus({ type: 'error', msg: 'New passwords do not match.' });
       return;
     }
-    localStorage.setItem('admin_password', passForm.next);
-    setPassStatus({ type: 'success', msg: 'Password updated successfully.' });
-    setPassForm({ current: '', next: '', confirm: '' });
-    setTimeout(() => { setShowPassModal(false); setPassStatus(null); }, 1500);
+    try {
+      const res = await fetch('/api/admin/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current: passForm.current, next: passForm.next })
+      });
+      if (res.ok) {
+        setPassStatus({ type: 'success', msg: 'Password updated successfully.' });
+        setPassForm({ current: '', next: '', confirm: '' });
+        setTimeout(() => { setShowPassModal(false); setPassStatus(null); }, 1500);
+      } else {
+        setPassStatus({ type: 'error', msg: 'Current password is incorrect.' });
+      }
+    } catch {
+      setPassStatus({ type: 'error', msg: 'Server error. Please try again.' });
+    }
   };
 
   if (loading) return <div className="p-20 text-center text-slate-400 font-medium">Loading database...</div>;
@@ -138,6 +145,13 @@ const AdminDashboard: React.FC = () => {
               <div className="space-y-4">
                 <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500">Raw Data</h3>
                 <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-sm space-y-4 font-normal text-slate-600">
+                  {(selectedSub.contactName || selectedSub.contactEmail) && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-1">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-blue-500">Contact Details (admin only — never published)</p>
+                      {selectedSub.contactName && <p><strong>Name:</strong> {selectedSub.contactName}</p>}
+                      {selectedSub.contactEmail && <p><strong>Email:</strong> <a href={`mailto:${selectedSub.contactEmail}`} className="text-blue-600 underline">{selectedSub.contactEmail}</a></p>}
+                    </div>
+                  )}
                   <p><strong>What happened:</strong><br/>{selectedSub.whatHappened}</p>
                   <p><strong>Impact:</strong><br/>{selectedSub.impact}</p>
                 </div>

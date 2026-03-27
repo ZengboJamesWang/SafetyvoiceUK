@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS submissions (
     impact TEXT,
     improvement TEXT,
     consentPublish BOOLEAN DEFAULT FALSE,
+    contactName VARCHAR(100) NULL,
+    contactEmail VARCHAR(255) NULL,
     publishTitle VARCHAR(255),
     publishSummary TEXT,
     publishStory TEXT,
