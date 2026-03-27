@@ -18,86 +18,156 @@ An independent platform for sharing anonymised experiences of laboratory safety 
 
 ---
 
-## Prerequisites
+## Before You Start
 
-Before deploying, you will need:
+You will need:
 
-- A **Google Gemini API key** — get one free at [aistudio.google.com](https://aistudio.google.com/app/apikey)
-- A **domain name** pointing to your server (optional for local use, required for public deployment)
-- **Root / sudo access** on Linux, or **Homebrew** on macOS
+- A **Google Gemini API key** — free at [aistudio.google.com](https://aistudio.google.com/app/apikey)
+- A **VPS or server** with root/sudo access (Ubuntu 22.04+ recommended)
+- A **domain name** pointing to your server's IP (optional for local testing, required for public use)
 
 ---
 
 ## Option A — Automated Deployment (Recommended)
 
-The `deploy.sh` script detects your OS, installs all dependencies, sets up the database, builds the frontend, and registers the app as a system service.
+The `deploy.sh` script handles everything: installs Node.js, MariaDB, and Nginx, sets up the database, builds the app, and registers it as a system service that starts on boot.
 
-### 1. Clone the repository
+### Step 1 — Install git and clone the repository
 
 ```bash
-git clone https://github.com/YOUR_ORG/safetyvoice-uk.git
-cd safetyvoice-uk
+# Debian / Ubuntu
+sudo apt-get update && sudo apt-get install -y git
+
+# RHEL / Fedora
+sudo dnf install -y git
+
+# macOS — git comes with Xcode Command Line Tools
+xcode-select --install
 ```
 
-### 2. Configure environment variables
+Then clone:
 
 ```bash
-cp .env.example .env
-nano .env
+git clone https://github.com/ZengboJamesWang/SafetyvoiceUK.git
+cd SafetyvoiceUK
 ```
 
-Fill in all required values — see the [Environment Variables](#environment-variables) section below.
+### Step 2 — Open firewall ports (Linux VPS only)
 
-### 3. Run the deployment script
+Most VPS providers block ports by default. Open HTTP and HTTPS:
 
 ```bash
-# Linux — requires root or sudo
+# Debian / Ubuntu (ufw)
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+
+# RHEL / Fedora (firewalld)
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --permanent --add-service=https
+sudo firewall-cmd --permanent --add-service=ssh
+sudo firewall-cmd --reload
+```
+
+> If your VPS provider has a separate network firewall panel (DigitalOcean, Hetzner, AWS Security Groups, etc.), also open ports **80** and **443** there.
+
+### Step 3 — Run the deployment script
+
+```bash
+# Linux
 sudo bash deploy.sh
 
-# macOS — no sudo needed, Homebrew must be installed
+# macOS (install Homebrew first if not already installed)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 bash deploy.sh
 ```
 
 The script will:
 1. Detect your OS and install **Node.js 20+**, **MariaDB**, and **Nginx**
-2. Create the `safetyvoice` database and `svadmin` user, import `schema.sql`
-3. Run `npm ci` and `npm run build`
-4. Register the app as a **systemd** service (Linux) or **launchd** agent (macOS)
-5. Write an Nginx reverse-proxy config for your domain
+2. Copy `.env.example` → `.env` and **pause** so you can fill in your credentials
+3. Create the `safetyvoice` database and import `schema.sql`
+4. Run `npm ci` and `npm run build`
+5. Register the app as a **systemd** service (Linux) or **launchd** agent (macOS)
+6. Write an Nginx reverse-proxy config and reload Nginx
 
-> The script pauses before the database step so you can finish editing `.env` if needed.
+**When the script pauses, edit `.env` in another terminal:**
 
-### 4. Verify the service
-
-**Linux:**
 ```bash
+nano /path/to/SafetyvoiceUK/.env
+```
+
+Set at minimum:
+
+```
+API_KEY=your_gemini_api_key
+DB_PASSWORD=a_strong_password
+DATABASE_URL=mysql://svadmin:a_strong_password@localhost:3306/safetyvoice
+ADMIN_SECRET=a_strong_random_secret_min_16_chars
+DOMAIN=yourdomain.com
+```
+
+> `DB_PASSWORD` and the password inside `DATABASE_URL` must be identical.
+
+Press **Enter** in the script terminal to continue once `.env` is saved.
+
+### Step 4 — Verify everything is running
+
+```bash
+# Check the service is active
 systemctl status safetyvoice-uk
+
+# Watch live logs
 journalctl -u safetyvoice-uk -f
 ```
 
-**macOS:**
-```bash
-launchctl list | grep safetyvoice
-tail -f logs/server.log
+Then open your browser:
+
 ```
+http://yourdomain.com        → the website
+http://yourdomain.com/#/admin  → admin panel (password = ADMIN_SECRET)
+```
+
+You should see the SafetyVoice UK homepage. If you see a blank page or error, check logs with `journalctl -u safetyvoice-uk -f`.
 
 ---
 
 ## Option B — Manual Deployment
 
-Use this if you prefer full control or the automated script does not suit your environment.
+Use this if you prefer step-by-step control.
 
-### 1. Install Node.js 20+
+### 1. Install git and clone
 
-**Via nvm (recommended — works on Linux and macOS):**
 ```bash
+# Debian / Ubuntu
+sudo apt-get update && sudo apt-get install -y git curl
+
+# RHEL / Fedora
+sudo dnf install -y git curl
+```
+
+```bash
+git clone https://github.com/ZengboJamesWang/SafetyvoiceUK.git
+cd SafetyvoiceUK
+```
+
+### 2. Open firewall ports
+
+See Step 2 in Option A above.
+
+### 3. Install Node.js 20+
+
+```bash
+# Via nvm (works on any Linux or macOS)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 source ~/.nvm/nvm.sh
 nvm install 20
 nvm use 20
+node -v   # should print v20.x.x
 ```
 
-**Via package manager:**
+Or via package manager:
+
 ```bash
 # Debian / Ubuntu
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -
@@ -108,7 +178,7 @@ curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
 sudo dnf install -y nodejs
 ```
 
-### 2. Install and start MariaDB
+### 4. Install and start MariaDB
 
 ```bash
 # Debian / Ubuntu
@@ -120,11 +190,12 @@ sudo dnf install -y mariadb-server
 sudo systemctl enable --now mariadb
 
 # macOS
-brew install mariadb
-brew services start mariadb
+brew install mariadb && brew services start mariadb
 ```
 
-### 3. Create the database and user
+### 5. Create the database and user
+
+Replace `YOUR_DB_PASSWORD` with a strong password — you will use the same value in `.env`.
 
 ```bash
 sudo mysql -u root <<SQL
@@ -135,37 +206,58 @@ FLUSH PRIVILEGES;
 SQL
 
 mysql -u svadmin -p'YOUR_DB_PASSWORD' safetyvoice < schema.sql
+echo "Database ready"
 ```
 
-### 4. Configure environment variables
+### 6. Configure environment variables
 
 ```bash
 cp .env.example .env
 nano .env
 ```
 
-### 5. Install dependencies and build
+See the [Environment Variables](#environment-variables) table below for all values.
+
+### 7. Install dependencies and build
 
 ```bash
 npm install
 npm run build
 ```
 
-### 6. Start the server
+### 8. Install Nginx and configure reverse proxy
 
-**Foreground (testing):**
 ```bash
-npm start
+# Debian / Ubuntu
+sudo apt-get install -y nginx
+
+# RHEL / Fedora
+sudo dnf install -y nginx
+sudo systemctl enable --now nginx
 ```
 
-**Background with nohup:**
+Copy the Nginx config (substituting your domain and port):
+
 ```bash
-nohup npm start > logs/server.log 2>&1 &
+sudo sed "s|__DOMAIN__|yourdomain.com|g; s|__APP_PORT__|8080|g; s|__APP_DIR__|$(pwd)|g" \
+  nginx.conf > /etc/nginx/sites-available/safetyvoice-uk.conf
+
+sudo ln -sf /etc/nginx/sites-available/safetyvoice-uk.conf \
+            /etc/nginx/sites-enabled/safetyvoice-uk.conf
+
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
-**As a systemd service (Linux — recommended for production):**
+### 9. Start the server as a systemd service
 
-Create `/etc/systemd/system/safetyvoice-uk.service`:
+Find where `npx` lives on your system:
+
+```bash
+which npx   # e.g. /usr/bin/npx or /home/user/.nvm/versions/node/v20.x.x/bin/npx
+```
+
+Create `/etc/systemd/system/safetyvoice-uk.service` (replace paths and user):
+
 ```ini
 [Unit]
 Description=SafetyVoice UK
@@ -173,53 +265,62 @@ After=network.target mariadb.service
 
 [Service]
 Type=simple
-User=YOUR_USER
-WorkingDirectory=/path/to/safetyvoice-uk
-ExecStart=/usr/bin/npx tsx server/server.ts
+User=YOUR_LINUX_USERNAME
+WorkingDirectory=/home/YOUR_LINUX_USERNAME/SafetyvoiceUK
+ExecStart=/full/path/to/npx tsx server/server.ts
 Restart=on-failure
-EnvironmentFile=/path/to/safetyvoice-uk/.env
+RestartSec=5
+EnvironmentFile=/home/YOUR_LINUX_USERNAME/SafetyvoiceUK/.env
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-Then:
+Then enable and start it:
+
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now safetyvoice-uk
+systemctl status safetyvoice-uk
 ```
+
+### 10. Verify
+
+Open `http://yourdomain.com` in your browser. You should see the SafetyVoice UK homepage.
 
 ---
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and fill in the values below.
+Copy `.env.example` to `.env` and set these values:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `API_KEY` | Yes | Google Gemini API key |
-| `DATABASE_URL` | Yes | `mysql://svadmin:PASSWORD@localhost:3306/safetyvoice` |
-| `ADMIN_SECRET` | Yes | Password for the admin panel — use a strong random string (min 16 chars) |
-| `DB_PASSWORD` | Yes | MariaDB password for the `svadmin` user |
+| `DATABASE_URL` | Yes | `mysql://svadmin:YOUR_DB_PASSWORD@localhost:3306/safetyvoice` |
+| `DB_PASSWORD` | Yes | Must match the password used in `DATABASE_URL` |
+| `ADMIN_SECRET` | Yes | Admin panel login password — strong random string, min 16 chars |
 | `PORT` | No | Server port (default: `8080`) |
-| `DOMAIN` | No | Your public domain — used by `deploy.sh` when writing the Nginx config |
-| `FRONTEND_ORIGIN` | No | CORS origin (default: `*`) — set to your domain in production |
+| `DOMAIN` | No | Your public domain — used by `deploy.sh` for Nginx config |
+| `FRONTEND_ORIGIN` | No | CORS origin — set to `https://yourdomain.com` in production |
+| `NODE_ENV` | No | Set to `production` for production deployments |
 
-> **Never commit `.env` to version control.** It is listed in `.gitignore`.
+> `DB_PASSWORD` and the password in `DATABASE_URL` must be the **same value**.
+> Never commit `.env` to version control — it is in `.gitignore`.
 
 ---
 
 ## Admin Panel
 
-The admin panel is available at `http://yourdomain.com/#/admin`.
+Access the admin panel at `http://yourdomain.com/#/admin`.
 
-**Login password** is the value of `ADMIN_SECRET` in your `.env` file.
-
-Once logged in, the **Security** button (top-right of the dashboard) allows you to change the password for the current server session. To make the change permanent, update `ADMIN_SECRET` in `.env` and restart the service.
+- **Login password** = value of `ADMIN_SECRET` in `.env`
+- Once logged in, the **Security** button (top-right) lets you change the password for the current session
+- To change it permanently: update `ADMIN_SECRET` in `.env` and restart the service
 
 ---
 
-## SSL / HTTPS (Recommended for Production)
+## SSL / HTTPS (Required for Production)
 
 ```bash
 # Debian / Ubuntu
@@ -231,7 +332,7 @@ sudo dnf install certbot python3-certbot-nginx
 sudo certbot --nginx -d yourdomain.com
 ```
 
-After Certbot runs, uncomment the HTTPS `server {}` block in your Nginx config file (path shown at the end of `deploy.sh` output or in `nginx.conf`).
+Certbot will automatically update your Nginx config for HTTPS and set up auto-renewal.
 
 ---
 
@@ -239,11 +340,11 @@ After Certbot runs, uncomment the HTTPS `server {}` block in your Nginx config f
 
 ```bash
 npm install
-npm run dev                    # Vite dev server → http://localhost:3000
-npx tsx server/server.ts       # API server     → http://localhost:8080
+npm run dev                  # Vite dev server → http://localhost:3000
+npx tsx server/server.ts     # API server     → http://localhost:8080
 ```
 
-The app falls back to `localStorage` if no database is configured. Set `DATABASE_URL` in `.env` to enable full persistence.
+The app uses `localStorage` if `DATABASE_URL` is not set in `.env`.
 
 ---
 
@@ -251,36 +352,43 @@ The app falls back to `localStorage` if no database is configured. Set `DATABASE
 
 | Task | Command |
 |------|---------|
-| Restart app (Linux) | `sudo systemctl restart safetyvoice-uk` |
-| View logs (Linux) | `journalctl -u safetyvoice-uk -f` |
-| Restart app (macOS) | `launchctl kickstart -k gui/$(id -u)/uk.safetyvoice.server` |
-| View logs (macOS) | `tail -f logs/server.log` |
+| Restart app | `sudo systemctl restart safetyvoice-uk` |
+| View live logs | `journalctl -u safetyvoice-uk -f` |
+| Stop app | `sudo systemctl stop safetyvoice-uk` |
 | Rebuild after code change | `npm run build && sudo systemctl restart safetyvoice-uk` |
 | MariaDB console | `mysql -u svadmin -p safetyvoice` |
-| Run tests | `npm test` |
+| Check Nginx config | `sudo nginx -t` |
+| Reload Nginx | `sudo systemctl reload nginx` |
 
 ---
 
 ## Troubleshooting
 
-**Server starts but database writes fail**
-Check `DATABASE_URL` in `.env` — the password must match the MariaDB user password exactly. Test the connection: `mysql -u svadmin -p safetyvoice`.
+**Site not loading — getting connection refused or timeout**
+Check the service is running (`systemctl status safetyvoice-uk`) and that firewall ports 80/443 are open (see Step 2). Also check your VPS provider's network firewall panel.
 
-**`ADMIN_SECRET is not configured` error on login**
-The `.env` file is not being loaded. Make sure it exists in the project root and `ADMIN_SECRET` is set.
+**Server starts but database writes fail**
+Confirm `DB_PASSWORD` and the password in `DATABASE_URL` are identical. Test the connection directly: `mysql -u svadmin -p safetyvoice`.
+
+**`ADMIN_SECRET is not configured` on admin login**
+The `.env` file is missing or not in the project root. Check it exists: `ls -la .env`.
+
+**`node: command not found` after installing via nvm**
+Run `source ~/.nvm/nvm.sh && nvm use 20`. To make it permanent, add those two lines to `~/.bashrc` or `~/.zshrc`.
 
 **Port 8080 already in use**
-Change `PORT` in `.env` and update your Nginx proxy config accordingly.
+Find and stop the conflicting process: `lsof -i :8080`. Or change `PORT` in `.env` and update the Nginx config.
 
-**`node: command not found` after install via nvm**
-Run `source ~/.nvm/nvm.sh && nvm use 20` in your current shell, or add it to your shell profile.
+**Nginx `sites-enabled` directory not found (RHEL/Fedora)**
+Use `/etc/nginx/conf.d/safetyvoice-uk.conf` instead — no symlink needed on RHEL-based systems.
 
 ---
 
-## Security
+## Security Checklist Before Going Live
 
-- Enable **HTTPS** before accepting real submissions — the app enforces strict security headers via `helmet`.
-- Set `FRONTEND_ORIGIN` in `.env` to your domain in production — do not leave it as `*`.
-- The deploy script creates a dedicated `svadmin` database user — do not use the MariaDB `root` account for the app.
-- `API_KEY` and `ADMIN_SECRET` must only be set in `.env`, never hardcoded in source files.
-- Submissions are archived long-term in accordance with UK GDPR and institutional data governance standards.
+- [ ] HTTPS enabled via Certbot
+- [ ] `FRONTEND_ORIGIN` set to your domain (not `*`) in `.env`
+- [ ] `ADMIN_SECRET` is a strong, unique password — not a dictionary word
+- [ ] `.env` is not committed to git (`git status` should not show it)
+- [ ] MariaDB `root` account has a password (`sudo mysql_secure_installation`)
+- [ ] VPS network firewall only exposes ports 22, 80, and 443
