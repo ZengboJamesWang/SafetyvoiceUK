@@ -341,9 +341,11 @@ Leave all `SMTP_*` variables empty to disable email notifications entirely — s
 
 Access the admin panel at `http://yourdomain.com/#/admin`.
 
-- **Login password** = value of `ADMIN_SECRET` in `.env`
+- **Default login password** = `admin123`
 - Once logged in, the **Security** button (top-right) lets you change the password for the current session
 - To change it permanently: update `ADMIN_SECRET` in `.env` and restart the service
+
+> **Change the default password before going live.** `admin123` is intentionally simple for initial setup — replace it with a strong unique value in production.
 
 ---
 
