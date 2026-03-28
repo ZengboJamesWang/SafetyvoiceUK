@@ -45,7 +45,7 @@ const Footer: React.FC = () => (
         <div>
           <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-widest mb-4">About</h3>
           <p className="text-sm text-slate-600 leading-relaxed">
-            SafetyVoice UK is an independent initiative documenting UK laboratory safety culture through the lens of EDI and safety enforcement.
+            SafetyVoice UK is an independent initiative documenting UK laboratory safety culture through the lens of EDI and safety policies implementation or enforcement.
           </p>
         </div>
         <div>

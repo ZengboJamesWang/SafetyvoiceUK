@@ -74,7 +74,7 @@ const seeds = [
     region: 'Scotland',
     timeWindow: '1–6 months ago',
     whatHappened: 'I was sitting in the data analysis bay adjacent to our wet laboratory — a separate write-up area with no chemical or biological hazards — when a safety officer entered and, in a loud voice in front of four colleagues and two visiting students, informed me I was in violation of PPE policy for not wearing safety glasses. I explained I was in the write-up area, not the laboratory. They issued me a formal written warning on the spot. The same officer regularly passes through the main wet lab area without comment when the principal investigator — a full professor — is working without eye protection.',
-    impact: 'The public nature of the interaction was deeply humiliating. I felt singled out in front of peers and visitors. The incident affected my confidence for several weeks and created low-level resentment in our group towards safety enforcement.',
+    impact: 'The public nature of the interaction was deeply humiliating. I felt singled out in front of peers and visitors. The incident affected my confidence for several weeks and created low-level resentment in our group towards safety policies implementation or enforcement.',
     improvement: 'PPE enforcement should be consistent regardless of seniority. Formal warnings should not be issued as a first response — a quiet, private conversation is always preferable where there is no immediate danger.',
     consentPublish: true,
     publishTitle: 'Public PPE Reprimand in Write-Up Area; Senior Staff Ignored',

@@ -1,6 +1,6 @@
 # SafetyVoice UK
 
-An independent platform for sharing anonymised experiences of laboratory safety enforcement, primarily serving UK Higher Education Institutions and open to any research organisation worldwide.
+An independent platform for sharing anonymised experiences of laboratory safety policies implementation or enforcement, primarily serving UK Higher Education Institutions and open to any research organisation worldwide.
 
 **Stack:** React 19 · Node.js / Express · PostgreSQL · Google Gemini AI
 

@@ -7,7 +7,7 @@ const AboutPage: React.FC = () => {
       <h1 className="text-4xl font-bold text-slate-900 mb-8 tracking-tight">About SafetyVoice UK</h1>
       <div className="text-slate-600 font-normal space-y-6 leading-relaxed text-lg">
         <p>
-          SafetyVoice UK is an independent initiative focusing on the intersection of laboratory safety enforcement, researcher dignity, and Equality, Diversity, and Inclusion (EDI). Its primary focus is the UK Higher Education sector, and it welcomes submissions from any research organisation, laboratory, NHS trust, government institution, or technical workplace.
+          SafetyVoice UK is an independent initiative focusing on the intersection of laboratory safety policies implementation or enforcement, researcher dignity, and Equality, Diversity, and Inclusion (EDI). Its primary focus is the UK Higher Education sector, and it welcomes submissions from any research organisation, laboratory, NHS trust, government institution, or technical workplace.
         </p>
         
         <div className="bg-slate-900 text-white p-8 rounded-3xl my-12 border border-slate-800 shadow-xl">
