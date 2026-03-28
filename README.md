@@ -2,7 +2,7 @@
 
 An independent platform for sharing anonymised experiences of laboratory safety enforcement, primarily serving UK Higher Education Institutions and open to any research organisation worldwide.
 
-**Stack:** React 19 · Node.js / Express · MariaDB · Google Gemini AI
+**Stack:** React 19 · Node.js / Express · PostgreSQL · Google Gemini AI
 
 ---
 
@@ -30,7 +30,7 @@ You will need:
 
 ## Option A — Automated Deployment (Recommended)
 
-The `deploy.sh` script handles everything: installs Node.js, MariaDB, and Nginx, sets up the database, builds the app, and registers it as a system service that starts on boot.
+The `deploy.sh` script handles everything: installs Node.js, PostgreSQL, and Nginx, sets up the database, builds the app, and registers it as a system service that starts on boot.
 
 ### Step 1 — Install git and clone the repository
 
@@ -84,7 +84,7 @@ bash deploy.sh
 ```
 
 The script will:
-1. Detect your OS and install **Node.js 20+**, **MariaDB**, and **Nginx**
+1. Detect your OS and install **Node.js 20+**, **PostgreSQL**, and **Nginx**
 2. Copy `.env.example` → `.env` and **pause** so you can fill in your credentials
 3. Create the `safetyvoice` database and import `schema.sql`
 4. Run `npm ci` and `npm run build`
@@ -178,19 +178,20 @@ curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
 sudo dnf install -y nodejs
 ```
 
-### 4. Install and start MariaDB
+### 4. Install and start PostgreSQL
 
 ```bash
 # Debian / Ubuntu
-sudo apt-get install -y mariadb-server
-sudo systemctl enable --now mariadb
+sudo apt-get install -y postgresql postgresql-contrib
+sudo systemctl enable --now postgresql
 
 # RHEL / Fedora
-sudo dnf install -y mariadb-server
-sudo systemctl enable --now mariadb
+sudo dnf install -y postgresql-server postgresql-contrib
+sudo postgresql-setup --initdb
+sudo systemctl enable --now postgresql
 
 # macOS
-brew install mariadb && brew services start mariadb
+brew install postgresql@17 && brew services start postgresql@17
 ```
 
 ### 5. Create the database and user
@@ -198,15 +199,25 @@ brew install mariadb && brew services start mariadb
 Replace `YOUR_DB_PASSWORD` with a strong password — you will use the same value in `.env`.
 
 ```bash
-sudo mysql -u root <<SQL
-CREATE DATABASE IF NOT EXISTS safetyvoice CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS 'svadmin'@'localhost' IDENTIFIED BY 'YOUR_DB_PASSWORD';
-GRANT ALL PRIVILEGES ON safetyvoice.* TO 'svadmin'@'localhost';
-FLUSH PRIVILEGES;
+# Debian / Ubuntu / RHEL
+sudo -u postgres psql <<SQL
+CREATE DATABASE safetyvoice;
+CREATE USER svadmin WITH PASSWORD 'YOUR_DB_PASSWORD';
+GRANT ALL PRIVILEGES ON DATABASE safetyvoice TO svadmin;
 SQL
 
-mysql -u svadmin -p'YOUR_DB_PASSWORD' safetyvoice < schema.sql
+sudo -u postgres psql -d safetyvoice <<SQL
+GRANT ALL ON SCHEMA public TO svadmin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO svadmin;
+SQL
+
+sudo -u postgres psql -d safetyvoice -f schema.sql
 echo "Database ready"
+
+# macOS (replace YOUR_MACOS_USER with your username)
+psql -U YOUR_MACOS_USER -c "CREATE DATABASE safetyvoice;" postgres
+psql -U YOUR_MACOS_USER -d safetyvoice -c "CREATE USER svadmin WITH PASSWORD 'YOUR_DB_PASSWORD'; GRANT ALL PRIVILEGES ON DATABASE safetyvoice TO svadmin; GRANT ALL ON SCHEMA public TO svadmin;"
+psql -U YOUR_MACOS_USER -d safetyvoice -f schema.sql
 ```
 
 ### 6. Configure environment variables
@@ -385,7 +396,7 @@ The app uses `localStorage` if `DATABASE_URL` is not set in `.env`.
 | View live logs | `journalctl -u safetyvoice-uk -f` |
 | Stop app | `sudo systemctl stop safetyvoice-uk` |
 | Rebuild after code change | `npm run build && sudo systemctl restart safetyvoice-uk` |
-| MariaDB console | `mysql -u svadmin -p safetyvoice` |
+| PostgreSQL console | `psql -U svadmin -d safetyvoice` |
 | Check Nginx config | `sudo nginx -t` |
 | Reload Nginx | `sudo systemctl reload nginx` |
 
@@ -419,5 +430,5 @@ Use `/etc/nginx/conf.d/safetyvoice-uk.conf` instead — no symlink needed on RHE
 - [ ] `FRONTEND_ORIGIN` set to your domain (not `*`) in `.env`
 - [ ] `ADMIN_SECRET` is a strong, unique password — not a dictionary word
 - [ ] `.env` is not committed to git (`git status` should not show it)
-- [ ] MariaDB `root` account has a password (`sudo mysql_secure_installation`)
+- [ ] PostgreSQL `svadmin` account uses a strong unique password
 - [ ] VPS network firewall only exposes ports 22, 80, and 443

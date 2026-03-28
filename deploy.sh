@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # SafetyVoice UK — VPS Deployment Script
-# Detects OS, installs dependencies, sets up MariaDB, builds, and starts the app.
+# Detects OS, installs dependencies, sets up PostgreSQL, builds, and starts the app.
 # Run as root or with sudo on a fresh VPS.
 # =============================================================================
 set -euo pipefail
@@ -44,7 +44,7 @@ detect_os() {
       # Try ID_LIKE as fallback
       if echo "$OS_ID_LIKE" | grep -q "debian"; then OS_FAMILY="debian"
       elif echo "$OS_ID_LIKE" | grep -q "rhel\|centos\|fedora"; then OS_FAMILY="rhel"
-      else error "Unsupported OS: $OS_ID. Open an issue or install Node.js + MariaDB manually."
+      else error "Unsupported OS: $OS_ID. Open an issue or install Node.js + PostgreSQL manually."
       fi
       ;;
   esac
@@ -98,46 +98,50 @@ install_nodejs() {
 }
 
 # -----------------------------------------------------------------------------
-# 3. Install MariaDB
+# 3. Install PostgreSQL
 # -----------------------------------------------------------------------------
-install_mariadb() {
-  if command -v mysql &>/dev/null || command -v mariadb &>/dev/null; then
-    info "MariaDB/MySQL already installed — skipping."
+install_postgresql() {
+  if command -v psql &>/dev/null; then
+    info "PostgreSQL already installed — skipping."
     return
   fi
 
-  info "Installing MariaDB ..."
+  info "Installing PostgreSQL ..."
   case "$OS_FAMILY" in
     debian)
       apt-get update -qq
-      apt-get install -y mariadb-server
+      apt-get install -y postgresql postgresql-contrib
       ;;
     rhel)
-      dnf install -y mariadb-server
+      dnf install -y postgresql-server postgresql-contrib
+      postgresql-setup --initdb
       ;;
     fedora)
-      dnf install -y mariadb-server
+      dnf install -y postgresql-server postgresql-contrib
+      postgresql-setup --initdb
       ;;
     arch)
-      pacman -Sy --noconfirm mariadb
-      mariadb-install-db --user=mysql --basedir=/usr --datadir=/var/lib/mysql
+      pacman -Sy --noconfirm postgresql
+      sudo -u postgres initdb --locale=en_US.UTF-8 -D /var/lib/postgres/data
       ;;
     macos)
-      brew install mariadb || brew upgrade mariadb || true
+      brew install postgresql@17 || brew upgrade postgresql@17 || true
+      brew link --overwrite --force postgresql@17 || true
+      export PATH="/usr/local/opt/postgresql@17/bin:/opt/homebrew/opt/postgresql@17/bin:$PATH"
       ;;
   esac
 
   # Start & enable
   case "$OS_FAMILY" in
     debian|rhel|fedora|arch)
-      systemctl enable mariadb
-      systemctl start  mariadb
+      systemctl enable postgresql
+      systemctl start  postgresql
       ;;
     macos)
-      brew services start mariadb
+      brew services start postgresql@17
       ;;
   esac
-  info "MariaDB installed and running."
+  info "PostgreSQL installed and running."
 }
 
 # -----------------------------------------------------------------------------
@@ -197,15 +201,15 @@ setup_env() {
   warn ".env created from .env.example."
   warn "Edit $APP_DIR/.env and set:"
   warn "  API_KEY        — your Google Gemini API key"
-  warn "  DB_PASSWORD    — the MariaDB password you will set below"
-  warn "  ADMIN_SECRET   — a strong secret for the admin panel"
+  warn "  DB_PASSWORD    — the PostgreSQL password you will set below"
+  warn "  ADMIN_SECRET   — override admin login (default: admin123)"
   warn "--------------------------------------------------------------"
   # Pause so the operator can read the message before the script continues
   read -rp "Press ENTER when you have finished editing .env ..."
 }
 
 # -----------------------------------------------------------------------------
-# 6. Set up MariaDB database & user
+# 6. Set up PostgreSQL database & user
 # -----------------------------------------------------------------------------
 setup_database() {
   # Load .env so we can read DB_* variables
@@ -220,17 +224,42 @@ setup_database() {
     error "DB_PASSWORD is not set in .env. Please set it and re-run."
   fi
 
-  info "Configuring MariaDB database '${DB_NAME}' and user '${DB_USER}' ..."
+  info "Configuring PostgreSQL database '${DB_NAME}' and user '${DB_USER}' ..."
 
-  mysql -u root <<SQL
-CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS '${DB_USER}'@'${DB_HOST}' IDENTIFIED BY '${DB_PASSWORD}';
-GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'${DB_HOST}';
-FLUSH PRIVILEGES;
+  # Run as the postgres superuser
+  PG_CMD="sudo -u postgres psql"
+  if [ "$OS_FAMILY" = "macos" ]; then
+    PG_CMD="psql -U $(whoami)"
+  fi
+
+  $PG_CMD <<SQL
+CREATE DATABASE ${DB_NAME};
+DO \$\$ BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${DB_USER}') THEN
+    CREATE USER ${DB_USER} WITH PASSWORD '${DB_PASSWORD}';
+  END IF;
+END \$\$;
+GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};
+SQL
+
+  # Grant schema-level permissions (needed for PostgreSQL 15+)
+  $PG_CMD -d "${DB_NAME}" <<SQL
+GRANT ALL ON SCHEMA public TO ${DB_USER};
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ${DB_USER};
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ${DB_USER};
 SQL
 
   info "Importing schema ..."
-  mysql -u "${DB_USER}" -p"${DB_PASSWORD}" -h "${DB_HOST}" "${DB_NAME}" < "$APP_DIR/schema.sql"
+  if [ "$OS_FAMILY" = "macos" ]; then
+    psql -U "$(whoami)" -d "${DB_NAME}" -f "$APP_DIR/schema.sql"
+  else
+    sudo -u postgres psql -d "${DB_NAME}" -f "$APP_DIR/schema.sql"
+  fi
+
+  # Update DATABASE_URL in .env to use PostgreSQL format
+  sed -i.bak "s|DATABASE_URL=.*|DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT:-5432}/${DB_NAME}|" "$APP_DIR/.env"
+  rm -f "$APP_DIR/.env.bak"
+
   info "Database ready."
 }
 
@@ -261,7 +290,7 @@ setup_systemd() {
   cat > "$SERVICE_FILE" <<EOF
 [Unit]
 Description=SafetyVoice UK
-After=network.target mariadb.service
+After=network.target postgresql.service
 
 [Service]
 Type=simple
@@ -379,7 +408,7 @@ main() {
   fi
 
   install_nodejs
-  install_mariadb
+  install_postgresql
   install_nginx
 
   setup_env

@@ -97,8 +97,8 @@ function mapRow(row: Record<string, unknown>) {
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Admin password — seeded from ADMIN_SECRET env var, changeable at runtime
-let adminPassword = process.env.ADMIN_SECRET || '';
+// Admin password — defaults to 'admin123' if ADMIN_SECRET is not set
+let adminPassword = process.env.ADMIN_SECRET || 'admin123';
 
 // In-memory session tokens (cleared on restart / password change)
 const validTokens = new Set<string>();
