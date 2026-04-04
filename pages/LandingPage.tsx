@@ -8,23 +8,23 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center">
             <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-6">
-              Safety Policies: Implementation, Enforcement, and Dignity in Research Environments
+              Safety Enforcement, EDI, and Professional Dignity
             </h1>
             <p className="max-w-3xl mx-auto text-xl text-slate-600 leading-relaxed font-normal mb-10">
-              SafetyVoice UK is a platform primarily serving UK Higher Education Institutions — and open to any research organisation, laboratory, or technical workplace — to share anonymised experiences of safety policy implementation or enforcement and its impact on work, wellbeing, and dignity.
+              SafetyVoice UK is an independent platform for laboratory users to <strong>raise their voice</strong> and document how enforcement processes can impact professional dignity and reveal EDI barriers. We help bridge the gap between technical compliance and an inclusive research culture.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <button 
                 onClick={() => window.location.hash = '/submit'} 
                 className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-base font-bold rounded-2xl text-white bg-slate-900 hover:bg-slate-800 transition shadow-xl shadow-slate-200"
               >
-                Submit an Experience
+                Share Your Experience
               </button>
               <button 
                 onClick={() => window.location.hash = '/published'} 
-                className="inline-flex items-center justify-center px-8 py-4 border border-slate-200 text-base font-bold rounded-2xl text-slate-700 bg-white hover:bg-slate-50 transition shadow-sm"
+                className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-base font-bold rounded-2xl text-slate-700 bg-white hover:bg-slate-50 transition shadow-sm"
               >
-                Read Published Stories
+                View Published Reports
               </button>
             </div>
           </div>
@@ -36,29 +36,34 @@ const LandingPage: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="prose prose-slate max-w-none">
             <p className="text-lg text-slate-600 leading-relaxed font-normal mb-8">
-              Safety is essential across UK Higher Education and the wider research sector. Effective enforcement plays a critical role in protecting people, facilities, and research integrity. At the same time, the <strong>processes through which safety policies are applied</strong> can have broader implications for laboratory users’ ability to work confidently, effectively, and safely.
+              Safety is a fundamental priority across the research and technical sector. However, the processes through which policies are enforced are not always neutral. When enforcement actions are carried out without considering personal dignity or <strong>Equality, Diversity, and Inclusion (EDI)</strong>, they can unintentionally become barriers to research and professional growth.
             </p>
 
-            <h2 className="text-3xl font-bold text-slate-900 mt-16 mb-6">Why this matters</h2>
+            <h2 className="text-3xl font-bold text-slate-900 mt-16 mb-6">Addressing the "Blind Spots"</h2>
             <p className="text-slate-600 leading-relaxed font-normal mb-6">
-              Decisions regarding <strong>safety oversight</strong> are typically made with the intention of protecting individuals and ensuring compliance with institutional and regulatory requirements. However, these processes operate within complex organisational structures, and the lived experiences of laboratory users may vary depending on communication, consistency, and transparency.
+              Decisions regarding safety oversight are typically made with the intention of protecting individuals. Yet, within complex organisational structures, <strong>unconscious bias</strong> can lead to disproportionate enforcement that marginalises certain staff and students. 
             </p>
             <p className="text-slate-600 leading-relaxed font-normal mb-8">
-              When <strong>compliance measures</strong> are carried out without clear explanation, documentation, or opportunity for dialogue, they may unintentionally affect users’ ability to perform their work or understand the rationale behind decisions. Over time, this can influence not only operational efficiency, but also users’ confidence in institutional processes.
-            </p>
-            <p className="text-slate-600 leading-relaxed font-normal mb-8">
-              Providing a constructive, independent channel for anonymised reflection via SafetyVoice UK can help identify patterns and opportunities for improvement across UK HEIs and beyond.
+              When interventions occur without clear explanation or opportunity for dialogue, they can damage a user’s professional standing and confidence. SafetyVoice UK provides a constructive channel to identify these patterns, ensuring that protecting the lab does not mean compromising the person.
             </p>
 
-            <h2 className="text-3xl font-bold text-slate-900 mt-16 mb-6">Institutional context and unconscious bias</h2>
+            {/* New Critical Message Section */}
+            <div className="my-16 p-8 bg-red-50 border-l-4 border-red-500 rounded-r-2xl">
+              <h2 className="text-2xl font-bold text-red-900 mb-4">The Risk of Unchecked Enforcement</h2>
+              <p className="text-red-800 leading-relaxed font-medium mb-4">
+                Without robust protocols and clear mechanisms for laboratory users to raise their concerns, safety enforcement can unintentionally facilitate <strong>discriminatory practices</strong>.
+              </p>
+              <p className="text-red-700 text-sm leading-relaxed">
+                In the absence of accountability, enforcement personnel may exercise their authority inconsistently—treating some staff with significantly more rigour than others under the guise of "safety." This lack of a proper voice mechanism allows EDI issues to grow undetected, as disproportionate treatment is often shielded from scrutiny by the technical nature of safety compliance.
+              </p>
+            </div>
+
+            <h2 className="text-3xl font-bold text-slate-900 mt-16 mb-6">Institutional Context and Leadership Bias</h2>
             <p className="text-slate-600 leading-relaxed font-normal mb-6">
-              Safety is a fundamental priority in UK universities and across the broader research and technical sector. At the same time, organisational structures may unintentionally create imbalances in how <strong>safety governance</strong> is experienced. Leadership and safety personnel carry responsibility for risk management, and their decisions are often made under pressure and with incomplete information.
+              Leadership and safety personnel carry significant responsibility for risk management, often making decisions under immense pressure. A focus on compliance can sometimes mask underlying biases in how rules are applied across different groups.
             </p>
             <p className="text-slate-600 leading-relaxed font-normal mb-6">
-              This does not imply intentional unfairness. Rather, it reflects the reality that institutional systems can evolve in ways that prioritise compliance, while the lived experiences of laboratory users may receive less visibility. Understanding these experiences constructively can help strengthen both safety and fairness.
-            </p>
-            <p className="text-slate-600 leading-relaxed font-normal mb-12">
-              This perspective aligns with broader Equality, Diversity, and Inclusion (EDI) principles, which recognise that fairness involves not only policy design, but also how policies are experienced in practice.
+              By documenting these lived experiences constructively, we help institutions see beyond the "safety manual" to the actual impact on their workforce. This perspective is essential for genuine EDI, recognising that fairness involves not only the design of a policy, but how it is experienced in practice.
             </p>
           </div>
 
@@ -67,31 +72,35 @@ const LandingPage: React.FC = () => {
             <div className="relative p-8 bg-slate-50 rounded-3xl border border-slate-100">
               <span className="absolute -top-6 -left-4 text-8xl font-black text-slate-200/50 z-0">1</span>
               <div className="relative z-10">
-                <h3 className="text-xl font-bold text-slate-900 mb-4">Channel for Reflection</h3>
-                <p className="text-slate-600 text-sm leading-relaxed">Providing a constructive channel primarily for UK HEI laboratory users — and any research or technical professional — to submit experiences related to safety policy application.</p>
+                <h3 className="text-xl font-bold text-slate-900 mb-4">Raising Your Voice</h3>
+                <p className="text-slate-600 text-sm leading-relaxed">Providing a secure channel for UK research and technical professionals to submit experiences where enforcement has impacted dignity or fairness.</p>
               </div>
             </div>
             <div className="relative p-8 bg-slate-50 rounded-3xl border border-slate-100">
               <span className="absolute -top-6 -left-4 text-8xl font-black text-slate-200/50 z-0">2</span>
               <div className="relative z-10">
-                <h3 className="text-xl font-bold text-slate-900 mb-4">AI Anonymisation</h3>
-                <p className="text-slate-600 text-sm leading-relaxed">Generating anonymised drafts using secure AI processing to protect contributor privacy and ensure institutional neutrality.</p>
+                <h3 className="text-xl font-bold text-slate-900 mb-4">Anonymised Advocacy</h3>
+                <p className="text-slate-600 text-sm leading-relaxed">Using Gemini 3 Flash to transform raw reports into professional, anonymised narratives that protect identities while highlighting systemic issues.</p>
               </div>
             </div>
             <div className="relative p-8 bg-slate-50 rounded-3xl border border-slate-100">
               <span className="absolute -top-6 -left-4 text-8xl font-black text-slate-200/50 z-0">3</span>
               <div className="relative z-10">
-                <h3 className="text-xl font-bold text-slate-900 mb-4">Thematic Analysis</h3>
-                <p className="text-slate-600 text-sm leading-relaxed">Identifying common themes and patterns across UK institutions and the wider research sector to improve safety culture.</p>
+                <h3 className="text-xl font-bold text-slate-900 mb-4">Identifying Bias</h3>
+                <p className="text-slate-600 text-sm leading-relaxed">Analysing themes to reveal where unconscious bias in leadership leads to inconsistent or disproportionate safety interventions.</p>
               </div>
             </div>
             <div className="relative p-8 bg-slate-50 rounded-3xl border border-slate-100">
               <span className="absolute -top-6 -left-4 text-8xl font-black text-slate-200/50 z-0">4</span>
               <div className="relative z-10">
-                <h3 className="text-xl font-bold text-slate-900 mb-4">Safety Culture</h3>
-                <p className="text-slate-600 text-sm leading-relaxed">Contributing to a more transparent, respectful, and effective safety environment for all stakeholders.</p>
+                <h3 className="text-xl font-bold text-slate-900 mb-4">Cultural Change</h3>
+                <p className="text-slate-600 text-sm leading-relaxed">Advocating for a more transparent and respectful safety environment that aligns technical compliance with institutional EDI goals.</p>
               </div>
             </div>
+          </div>
+          
+          <div className="mt-20 pt-8 border-t border-slate-200 flex justify-center">
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Platform v1.2.1-BALANCED-VOICE</p>
           </div>
         </div>
       </section>
