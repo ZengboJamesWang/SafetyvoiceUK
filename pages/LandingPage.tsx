@@ -98,10 +98,6 @@ const LandingPage: React.FC = () => {
               </div>
             </div>
           </div>
-          
-          <div className="mt-20 pt-8 border-t border-slate-200 flex justify-center">
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Platform v1.2.1-BALANCED-VOICE</p>
-          </div>
         </div>
       </section>
     </div>
