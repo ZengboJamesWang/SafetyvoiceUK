@@ -63,7 +63,7 @@ const LandingPage: React.FC = () => {
               Leadership and safety personnel carry significant responsibility for risk management, often making decisions under immense pressure and a focus on preventing errors. In this high-stakes environment, a natural concern for safety can unintentionally mask <strong>unconscious bias</strong> in how rules are applied across different groups.
             </p>
             <p className="text-slate-600 leading-relaxed font-normal mb-6">
-              When safety protocols lack enough consideration for EDI, there is a risk that enforcement may be applied inconsistently, potentially treating specific staff or students with more rigour than others in the name of safety. By documenting these lived experiences constructively, we help institutions see beyond the "safety manual" to the actual impact on their workforce. This perspective is essential for genuine EDI, recognising that fairness involves not only the design of a policy, but how it is experienced in practice.
+              By documenting these lived experiences constructively, we help institutions see beyond the "safety manual" to the actual impact on their workforce. This perspective is essential for genuine EDI, recognising that fairness involves not only the design of a policy, but how it is experienced in practice.
             </p>
           </div>
 
