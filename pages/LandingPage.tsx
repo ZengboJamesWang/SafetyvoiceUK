@@ -47,7 +47,7 @@ const LandingPage: React.FC = () => {
               When interventions occur without clear explanation or opportunity for dialogue, they can damage a user’s professional standing and confidence. SafetyVoice UK provides a constructive channel to identify these patterns, ensuring that protecting the lab does not mean compromising the person.
             </p>
 
-            {/* New Critical Message Section */}
+            {/* Critical Message Section */}
             <div className="my-16 p-8 bg-red-50 border-l-4 border-red-500 rounded-r-2xl">
               <h2 className="text-2xl font-bold text-red-900 mb-4">The Risk of Unchecked Enforcement</h2>
               <p className="text-red-800 leading-relaxed font-medium mb-4">
@@ -58,12 +58,12 @@ const LandingPage: React.FC = () => {
               </p>
             </div>
 
-            <h2 className="text-3xl font-bold text-slate-900 mt-16 mb-6">Institutional Context and Leadership Bias</h2>
+            <h2 className="text-3xl font-bold text-slate-900 mt-16 mb-6">Institutional Context and Safety Governance</h2>
             <p className="text-slate-600 leading-relaxed font-normal mb-6">
-              Leadership and safety personnel carry significant responsibility for risk management, often making decisions under immense pressure. A focus on compliance can sometimes mask underlying biases in how rules are applied across different groups.
+              Leadership and safety personnel carry significant responsibility for risk management, often making decisions under immense pressure and a focus on preventing errors. In this high-stakes environment, a natural concern for safety can unintentionally mask <strong>unconscious bias</strong> in how rules are applied across different groups.
             </p>
             <p className="text-slate-600 leading-relaxed font-normal mb-6">
-              By documenting these lived experiences constructively, we help institutions see beyond the "safety manual" to the actual impact on their workforce. This perspective is essential for genuine EDI, recognising that fairness involves not only the design of a policy, but how it is experienced in practice.
+              When safety protocols lack enough consideration for EDI, there is a risk that enforcement may be applied inconsistently, potentially treating specific staff or students with more rigour than others in the name of safety. By documenting these lived experiences constructively, we help institutions see beyond the "safety manual" to the actual impact on their workforce. This perspective is essential for genuine EDI, recognising that fairness involves not only the design of a policy, but how it is experienced in practice.
             </p>
           </div>
 
